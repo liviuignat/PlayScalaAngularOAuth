@@ -17,32 +17,32 @@
       factory: factory
     };
 
-    function directive(name, constructorFn) {
+    function directive(name, ConstructorFn) {
 
-      constructorFn = _normalizeConstructor(constructorFn);
+      ConstructorFn = _normalizeConstructor(ConstructorFn);
 
-      if (!constructorFn.prototype.compile) {
+      if (!ConstructorFn.prototype.compile) {
         // create an empty compile function if none was defined.
-        constructorFn.prototype.compile = () => {};
+        ConstructorFn.prototype.compile = () => {};
       }
 
-      var originalCompileFn = _cloneFunction(constructorFn.prototype.compile);
+      var originalCompileFn = _cloneFunction(ConstructorFn.prototype.compile);
 
       // Decorate the compile method to automatically return the link method (if it exists)
       // and bind it to the context of the constructor (so `this` works correctly).
       // This gets around the problem of a non-lexical "this" which occurs when the directive class itself
       // returns `this.link` from within the compile function.
-      _override(constructorFn.prototype, 'compile', function () {
+      _override(ConstructorFn.prototype, 'compile', function () {
         return function () {
           originalCompileFn.apply(this, arguments);
 
-          if (constructorFn.prototype.link) {
-            return constructorFn.prototype.link.bind(this);
+          if (ConstructorFn.prototype.link) {
+            return ConstructorFn.prototype.link.bind(this);
           }
         };
       });
 
-      var factoryArray = _createFactoryArray(constructorFn);
+      var factoryArray = _createFactoryArray(ConstructorFn);
 
       app.directive(name, factoryArray);
       return this;
@@ -58,20 +58,20 @@
       return this;
     }
 
-    function provider(name, constructorFn) {
-      app.provider(name, constructorFn);
+    function provider(name, ConstructorFn) {
+      app.provider(name, ConstructorFn);
       return this;
     }
 
-    function factory(name, constructorFn) {
-      constructorFn = _normalizeConstructor(constructorFn);
-      var factoryArray = _createFactoryArray(constructorFn);
+    function factory(name, ConstructorFn) {
+      ConstructorFn = _normalizeConstructor(ConstructorFn);
+      var factoryArray = _createFactoryArray(ConstructorFn);
       app.factory(name, factoryArray);
       return this;
     }
 
     /**
-     * If the constructorFn is an array of type ['dep1', 'dep2', ..., constructor() {}]
+     * If the ConstructorFn is an array of type ['dep1', 'dep2', ..., constructor() {}]
      * we need to pull out the array of dependencies and add it as an $inject property of the
      * actual constructor function.
      * @param input
@@ -79,18 +79,18 @@
      * @private
      */
     function _normalizeConstructor(input) {
-      var constructorFn;
+      var ConstructorFn;
 
       if (input.constructor === Array) {
         //
         var injected = input.slice(0, input.length - 1);
-        constructorFn = input[input.length - 1];
-        constructorFn.$inject = injected;
+        ConstructorFn = input[input.length - 1];
+        ConstructorFn.$inject = injected;
       } else {
-        constructorFn = input;
+        ConstructorFn = input;
       }
 
-      return constructorFn;
+      return ConstructorFn;
     }
 
     /**
@@ -100,19 +100,19 @@
      * In order to inject the dependencies, they must be attached to the constructor function with the
      * `$inject` property annotation.
      *
-     * @param constructorFn
+     * @param ConstructorFn
      * @returns {Array.<T>}
      * @private
      */
-    function _createFactoryArray(constructorFn) {
+    function _createFactoryArray(ConstructorFn) {
       // get the array of dependencies that are needed by this component (as contained in the `$inject` array)
-      var args = constructorFn.$inject || [];
+      var args = ConstructorFn.$inject || [];
       var factoryArray = args.slice(); // create a copy of the array
       // The factoryArray uses Angular's array notation whereby each element of the array is the name of a
       // dependency, and the final item is the factory function itself.
       factoryArray.push((...args) => {
-        //return new constructorFn(...args);
-        var instance = new constructorFn(...args);
+        //return new ConstructorFn(...args);
+        var instance = new ConstructorFn(...args);
         for (var key in instance) {
           instance[key] = instance[key];
         }
@@ -140,7 +140,7 @@
      * @param callback
      */
     function _override(object, methodName, callback) {
-      object[methodName] = callback(object[methodName])
+      object[methodName] = callback(object[methodName]);
     }
   }
 })(angular);
