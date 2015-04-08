@@ -23,5 +23,7 @@ trait IAuthRepository {
 
   def insertAuthToken(authAccessToken: AuthAccessToken): Future[LastError]
 
+  def updateAuthToken(authAccessToken: AuthAccessToken): Future[LastError]
+
   def deleteAuthTokensByUserAndClient(userId: String, clientId: String): Future[LastError]
 }

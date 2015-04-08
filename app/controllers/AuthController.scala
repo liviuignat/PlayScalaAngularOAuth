@@ -29,7 +29,7 @@ class AuthController @Inject() (encriptionService: IStringEncriptionService,
                                 randomStringGenerator: IRandomStringService,
                                 emailService: IEmailService,
                                 userRepository: IUserRepository,
-                                authDataHandlerFactory: IOAuthDataHandlerFactory) extends Controller with MongoController with OAuth2Provider {
+                                authDataHandlerFactory: IOAuthDataHandlerFactory) extends Controller with MongoController with MyOAuth2Provider {
 
   def createUser = Action.async(parse.json) { req =>
     req.body.validate[CreateUserRequest].map {
