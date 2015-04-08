@@ -154,6 +154,8 @@ class AuthControllerSpec extends JasmineSpec with BeforeAndAfter with BeforeAndA
           beforeEach {
             val uri = s"/api/user/$firstUserId"
             val request = FakeRequest.apply("GET", uri)
+              .withHeaders("Authorization" -> s"Bearer $accessToken")
+
             response = route(request)
 
             result = Await.result(response.get, timeout)
@@ -173,6 +175,7 @@ class AuthControllerSpec extends JasmineSpec with BeforeAndAfter with BeforeAndA
             var result: Result = null
             beforeEach {
               val request = FakeRequest.apply("POST", "/api/auth/create")
+                .withHeaders("Authorization" -> s"Bearer $accessToken")
                 .withJsonBody(Json.obj(
                 "email" -> "liviu@ignat.email",
                 "password" -> "anothertest123",
@@ -208,6 +211,7 @@ class AuthControllerSpec extends JasmineSpec with BeforeAndAfter with BeforeAndA
 
             beforeEach {
               val request = FakeRequest.apply("POST", "/api/auth/resetpassword")
+                .withHeaders("Authorization" -> s"Bearer $accessToken")
                 .withJsonBody(Json.obj("email" -> "liviu@ignat.email"))
 
               response = route(request)

@@ -24,22 +24,28 @@ import requests.Mappings._
  */
 
 @Singleton
-class UsersController @Inject() (encriptionService: IStringEncriptionService, userRepository: IUserRepository)  extends Controller with MongoController {
+class UsersController @Inject() (
+  encriptionService: IStringEncriptionService,
+  userRepository: IUserRepository,
+  authDataHandlerFactory: IOAuthDataHandlerFactory) extends Controller with MongoController with MyOAuth2Provider {
+
   private final val logger: Logger = LoggerFactory.getLogger(classOf[UsersController])
 
-  def getUserById(id: String) = Action.async {
-    userRepository.getById(id).map {
-      case Some(user) => {
-        val response: GetUserResponse = user
-        val responseJson = Json.toJson(response)
-        Ok(responseJson)
+  def getUserById(id: String) = Action.async { implicit req =>
+    authorize(authDataHandlerFactory.getInstance()) { authInfo =>
+      userRepository.getById(id).map {
+        case Some(user) => {
+          val response: GetUserResponse = user
+          val responseJson = Json.toJson(response)
+          Ok(responseJson)
+        }
+        case None => NotFound(Json.obj("message" -> "No such item"))
       }
-      case None => NotFound(Json.obj("message" -> "No such item"))
     }
   }
 
-  def getUserSearch() = Action.async(parse.anyContent) {
-    req => {
+  def getUserSearch() = Action.async(parse.anyContent) { implicit req =>
+    authorize(authDataHandlerFactory.getInstance()) { authInfo =>
       val query = req.getQueryString("q");
 
       userRepository.getAll(query).map({
@@ -54,24 +60,28 @@ class UsersController @Inject() (encriptionService: IStringEncriptionService, us
     }
   }
 
-  def updateUserById(id: String) = Action.async(parse.json) { req =>
-    req.body.validate[UpdateUserRequest].map {
-      updateUserRequest => {
-        updateUserRequest.id = Some(id)
-        val user: User = updateUserRequest
+  def updateUserById(id: String) = Action.async(parse.json) { implicit req =>
+    authorize(authDataHandlerFactory.getInstance()) { authInfo =>
+      req.body.validate[UpdateUserRequest].map {
+        updateUserRequest => {
+          updateUserRequest.id = Some(id)
+          val user: User = updateUserRequest
 
-        userRepository.update(user).map({
-          case lastError if lastError.ok() => Ok("")
-          case lastError if !lastError.ok() => InternalServerError(Json.obj("message" -> "Internal server error"))
-        })
-      }
-    }.getOrElse(Future.successful(BadRequest(Json.obj("message" -> "Invalid json"))))
+          userRepository.update(user).map({
+            case lastError if lastError.ok() => Ok("")
+            case lastError if !lastError.ok() => InternalServerError(Json.obj("message" -> "Internal server error"))
+          })
+        }
+      }.getOrElse(Future.successful(BadRequest(Json.obj("message" -> "Invalid json"))))
+    }
   }
 
-  def deleteUserById(id: String) = Action.async {
-    userRepository.delete(id).map({
-      case lastError if lastError.ok() => Ok("")
-      case lastError if !lastError.ok() => InternalServerError(Json.obj("message" -> "Internal server error"))
-    })
+  def deleteUserById(id: String) = Action.async { implicit req =>
+    authorize(authDataHandlerFactory.getInstance()) { authInfo =>
+      userRepository.delete(id).map({
+        case lastError if lastError.ok() => Ok("")
+        case lastError if !lastError.ok() => InternalServerError(Json.obj("message" -> "Internal server error"))
+      })
+    }
   }
 }

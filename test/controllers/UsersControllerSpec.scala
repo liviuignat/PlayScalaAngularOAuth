@@ -64,186 +64,217 @@ class UsersControllerSpec extends JasmineSpec with BeforeAndAfter with BeforeAnd
           result = Await.result(response.get, timeout)
         }
 
-        describe("When getting first user") {
+        describe("When getting the token") {
           var response: Option[Future[Result]] = null
           var result: Result = null
-          beforeEach {
-            val uri = s"/api/user/$firstUserId"
-            val request = FakeRequest.apply("GET", uri)
-            response = route(request)
-            result = Await.result(response.get, timeout)
-          }
-
-          it("Should have a defined response") {
-            response.isDefined should equal(true)
-          }
-
-          it("Should be able make the request with success") {
-            result.header.status should equal(OK)
-          }
-
-          it("Should have response password undefined") {
-            val json: JsValue = contentAsJson(response.get)
-            val password = json.\("password")
-
-            assert(password.getClass == (new JsUndefined("")).getClass)
-          }
-
-          it("Should have response email undefined") {
-            val json: JsValue = contentAsJson(response.get)
-            val password = json.\("email")
-
-            assert(password.getClass == (new JsUndefined("")).getClass)
-          }
-        }
-
-        describe("When query user") {
-
-          describe("When query user with 'liviu'") {
-            var response: Option[Future[Result]] = null
-            var result: Result = null
-            beforeEach {
-              val uri = s"/api/user?q=liviu"
-              val request = FakeRequest.apply("GET", uri)
-              response = route(request)
-              result = Await.result(response.get, timeout)
-            }
-
-            it("Should make the request with success") {
-              response.isDefined should equal(true)
-              result.header.status should equal(OK)
-            }
-
-            it("Should have two results") {
-              val json: JsArray = contentAsJson(response.get).as[JsArray]
-              json.value.size should equal(2)
-            }
-
-            it("Should have the two users in the results") {
-              val users: List[GetUserResponse] = contentAsJson(response.get).as[List[GetUserResponse]]
-              users(0).firstName should equal("Liviu")
-              users(1).firstName should equal("Liviu Test")
-            }
-          }
-
-          describe("When query user with 'test'") {
-            var response: Option[Future[Result]] = null
-            var result: Result = null
-            beforeEach {
-              val uri = s"/api/user?q=test"
-              val request = FakeRequest.apply("GET", uri)
-              response = route(request)
-              result = Await.result(response.get, timeout)
-            }
-
-            it("Should make the request with success") {
-              response.isDefined should equal(true)
-              result.header.status should equal(OK)
-            }
-
-            it("Should have one result") {
-              val json: JsArray = contentAsJson(response.get).as[JsArray]
-              json.value.size should equal(1)
-            }
-
-            it("Should have the second user in the results") {
-              val users: List[GetUserResponse] = contentAsJson(response.get).as[List[GetUserResponse]]
-              users(0).firstName should equal("Liviu Test")
-            }
-          }
-
-          describe("When query is not present") {
-            var response: Option[Future[Result]] = null
-            var result: Result = null
-            beforeEach {
-              val uri = s"/api/user"
-              val request = FakeRequest.apply("GET", uri)
-              response = route(request)
-              result = Await.result(response.get, timeout)
-            }
-
-            it("Should make the request with success") {
-              response.isDefined should equal(true)
-              result.header.status should equal(OK)
-            }
-
-            it("Should have two results") {
-              val json: JsArray = contentAsJson(response.get).as[JsArray]
-              json.value.size should equal(2)
-            }
-          }
-        }
-
-        describe("When update user") {
-          var response: Option[Future[Result]] = null
-          var result: Result = null
+          var accessToken: String = null
 
           beforeEach {
-            val request = FakeRequest.apply("PUT", s"/api/user/$firstUserId")
+            val request = FakeRequest.apply("POST", "/api/auth/access_token")
               .withJsonBody(Json.obj(
-              "firstName" -> "Liviu Updated",
-              "lastName" -> "Ignat Updated"))
+              "grant_type" -> "password",
+              "client_id" -> "DefaultClient",
+              "client_secret" -> "DefatultClientSecret",
+              "scope" -> "offline_access",
+              "username" -> "liviu.test@ignat.email",
+              "password" -> "cc03e747a6afbbcbf8be7668acfebee5"))
+
             response = route(request)
             result = Await.result(response.get, timeout)
+            val json: JsValue = contentAsJson(response.get)
+            accessToken = json.\("access_token").as[String]
           }
 
-          it("Should work with success") {
-            response.isDefined should equal(true)
-            result.header.status should equal(OK)
-          }
 
-          describe("When getting the user") {
+          describe("When getting first user") {
             var response: Option[Future[Result]] = null
             var result: Result = null
             beforeEach {
               val uri = s"/api/user/$firstUserId"
               val request = FakeRequest.apply("GET", uri)
+                .withHeaders("Authorization" -> s"Bearer $accessToken")
               response = route(request)
               result = Await.result(response.get, timeout)
             }
 
-            it("Should have the updated first name") {
-              val json: JsValue = contentAsJson(response.get)
-              val firstName: String = json.\("firstName").as[String]
-              firstName should equal("Liviu Updated")
-            }
-
-            it("Should have the updated last name") {
-              val json: JsValue = contentAsJson(response.get)
-              val firstName: String = json.\("lastName").as[String]
-              firstName should equal("Ignat Updated")
-            }
-          }
-        }
-
-        describe("When delete user") {
-          var response: Option[Future[Result]] = null
-          var result: Result = null
-
-          beforeEach {
-            val request = FakeRequest.apply("DELETE", s"/api/user/$firstUserId")
-            response = route(request)
-            result = Await.result(response.get, timeout)
-          }
-
-          it("Should work with success") {
-            response.isDefined should equal(true)
-            result.header.status should equal(OK)
-          }
-
-          describe("When getting the user") {
-            var response: Option[Future[Result]] = null
-            var result: Result = null
-            beforeEach {
-              val uri = s"/api/user/$firstUserId"
-              val request = FakeRequest.apply("GET", uri)
-              response = route(request)
-              result = Await.result(response.get, timeout)
-            }
-
-            it("Should not find that user anymore") {
+            it("Should have a defined response") {
               response.isDefined should equal(true)
-              result.header.status should equal(NOT_FOUND)
+            }
+
+            it("Should be able make the request with success") {
+              result.header.status should equal(OK)
+            }
+
+            it("Should have response password undefined") {
+              val json: JsValue = contentAsJson(response.get)
+              val password = json.\("password")
+
+              assert(password.getClass == (new JsUndefined("")).getClass)
+            }
+
+            it("Should have response email undefined") {
+              val json: JsValue = contentAsJson(response.get)
+              val password = json.\("email")
+
+              assert(password.getClass == (new JsUndefined("")).getClass)
+            }
+          }
+
+          describe("When query user") {
+
+            describe("When query user with 'liviu'") {
+              var response: Option[Future[Result]] = null
+              var result: Result = null
+              beforeEach {
+                val uri = s"/api/user?q=liviu"
+                val request = FakeRequest.apply("GET", uri)
+                  .withHeaders("Authorization" -> s"Bearer $accessToken")
+                response = route(request)
+                result = Await.result(response.get, timeout)
+              }
+
+              it("Should make the request with success") {
+                response.isDefined should equal(true)
+                result.header.status should equal(OK)
+              }
+
+              it("Should have two results") {
+                val json: JsArray = contentAsJson(response.get).as[JsArray]
+                json.value.size should equal(2)
+              }
+
+              it("Should have the two users in the results") {
+                val users: List[GetUserResponse] = contentAsJson(response.get).as[List[GetUserResponse]]
+                users(0).firstName should equal("Liviu")
+                users(1).firstName should equal("Liviu Test")
+              }
+            }
+
+            describe("When query user with 'test'") {
+              var response: Option[Future[Result]] = null
+              var result: Result = null
+              beforeEach {
+                val uri = s"/api/user?q=test"
+                val request = FakeRequest.apply("GET", uri)
+                  .withHeaders("Authorization" -> s"Bearer $accessToken")
+                response = route(request)
+                result = Await.result(response.get, timeout)
+              }
+
+              it("Should make the request with success") {
+                response.isDefined should equal(true)
+                result.header.status should equal(OK)
+              }
+
+              it("Should have one result") {
+                val json: JsArray = contentAsJson(response.get).as[JsArray]
+                json.value.size should equal(1)
+              }
+
+              it("Should have the second user in the results") {
+                val users: List[GetUserResponse] = contentAsJson(response.get).as[List[GetUserResponse]]
+                users(0).firstName should equal("Liviu Test")
+              }
+            }
+
+            describe("When query is not present") {
+              var response: Option[Future[Result]] = null
+              var result: Result = null
+              beforeEach {
+                val uri = s"/api/user"
+                val request = FakeRequest.apply("GET", uri)
+                  .withHeaders("Authorization" -> s"Bearer $accessToken")
+                response = route(request)
+                result = Await.result(response.get, timeout)
+              }
+
+              it("Should make the request with success") {
+                response.isDefined should equal(true)
+                result.header.status should equal(OK)
+              }
+
+              it("Should have two results") {
+                val json: JsArray = contentAsJson(response.get).as[JsArray]
+                json.value.size should equal(2)
+              }
+            }
+          }
+
+          describe("When update user") {
+            var response: Option[Future[Result]] = null
+            var result: Result = null
+
+            beforeEach {
+              val request = FakeRequest.apply("PUT", s"/api/user/$firstUserId")
+                .withHeaders("Authorization" -> s"Bearer $accessToken")
+                .withJsonBody(Json.obj(
+                "firstName" -> "Liviu Updated",
+                "lastName" -> "Ignat Updated"))
+              response = route(request)
+              result = Await.result(response.get, timeout)
+            }
+
+            it("Should work with success") {
+              response.isDefined should equal(true)
+              result.header.status should equal(OK)
+            }
+
+            describe("When getting the user") {
+              var response: Option[Future[Result]] = null
+              var result: Result = null
+              beforeEach {
+                val uri = s"/api/user/$firstUserId"
+                val request = FakeRequest.apply("GET", uri)
+                  .withHeaders("Authorization" -> s"Bearer $accessToken")
+                response = route(request)
+                result = Await.result(response.get, timeout)
+              }
+
+              it("Should have the updated first name") {
+                val json: JsValue = contentAsJson(response.get)
+                val firstName: String = json.\("firstName").as[String]
+                firstName should equal("Liviu Updated")
+              }
+
+              it("Should have the updated last name") {
+                val json: JsValue = contentAsJson(response.get)
+                val firstName: String = json.\("lastName").as[String]
+                firstName should equal("Ignat Updated")
+              }
+            }
+          }
+
+          describe("When delete user") {
+            var response: Option[Future[Result]] = null
+            var result: Result = null
+
+            beforeEach {
+              val request = FakeRequest.apply("DELETE", s"/api/user/$firstUserId")
+                .withHeaders("Authorization" -> s"Bearer $accessToken")
+              response = route(request)
+              result = Await.result(response.get, timeout)
+            }
+
+            it("Should work with success") {
+              response.isDefined should equal(true)
+              result.header.status should equal(OK)
+            }
+
+            describe("When getting the user") {
+              var response: Option[Future[Result]] = null
+              var result: Result = null
+              beforeEach {
+                val uri = s"/api/user/$firstUserId"
+                val request = FakeRequest.apply("GET", uri).withHeaders("Authorization" -> s"Bearer $accessToken")
+
+                response = route(request)
+                result = Await.result(response.get, timeout)
+              }
+
+              it("Should not find that user anymore") {
+                response.isDefined should equal(true)
+                result.header.status should equal(NOT_FOUND)
+              }
             }
           }
         }
