@@ -54,21 +54,6 @@ class AuthController @Inject() (encriptionService: IStringEncriptionService,
     }.getOrElse(Future.successful(BadRequest(Json.obj("message" -> "Invalid json"))))
   }
 
-  def login() = Action.async(parse.json) { req =>
-    req.body.validate[LoginRequest].map {
-      getUserRequest => {
-        userRepository.getByEmailAndPassword(getUserRequest.email, getUserRequest.password).map({
-          case Some(user) => {
-            val response: GetUserResponse = user
-            val responseJson = Json.toJson(response)
-            Ok(responseJson)
-          }
-          case None => BadRequest(Json.obj("message" -> "No such item"))
-        })
-      }
-    }.getOrElse(Future.successful(BadRequest(Json.obj("message" -> "Invalid json"))))
-  }
-
   def resetPassword() = Action.async(parse.json) { req =>
     req.body.validate[ResetPasswordRequest].map {
       resetPasswordRequest => {
