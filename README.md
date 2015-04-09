@@ -2,4 +2,4 @@
 
 Published on heroku: https://scalaplaymongo.herokuapp.com/
 
-Based on https://github.com/liviuignat/PlayScalaAngularOAuth. Make sure you understand the first part of the project first.
+Based on https://github.com/liviuignat/PlayAndScala. Make sure you understand the first part of the project first.
