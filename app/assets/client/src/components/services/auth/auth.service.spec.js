@@ -1,7 +1,7 @@
 'use strict';
 
 describe('AuthService', function (){
-   var $http, $rootScope, service, md5;
+   var $http, $rootScope, $cookies, service, md5;
 
   beforeEach(module('app', function () {
     angular.module('app').factory('AuthInterceptor', window.mocks.AuthInterceptorMock.getInstance);
@@ -10,8 +10,9 @@ describe('AuthService', function (){
   beforeEach(inject(function ($injector) {
     $http = $injector.get('$httpBackend');
     $rootScope = $injector.get('$rootScope');
-    service = $injector.get('AuthService');
+    $cookies = $injector.get('cookieStore');
     md5 = $injector.get('md5');
+    service = $injector.get('AuthService');
   }));
 
   it('Should have the service injected and defined', function () {
@@ -27,7 +28,7 @@ describe('AuthService', function (){
       lastName: 'Ignat'
     };
 
-    describe('When login is successful with status code 201', function () {
+    describe('When user is created is successful with status code 201', function () {
       var response;
       beforeEach(function () {
         $http.expectPOST(url).respond(201);
@@ -45,7 +46,7 @@ describe('AuthService', function (){
       });
     });
 
-    describe('When login is successful with status code 401', function () {
+    describe('When user is NOT successful with status code 401', function () {
       var response;
       beforeEach(function () {
         $http.expectPOST(url).respond(401);
@@ -65,16 +66,23 @@ describe('AuthService', function (){
   });
 
   describe('When user logs in', function () {
-    var url = '/api/auth/login';
+    var url = '/api/auth/access_token';
     var loginData = {
       email: 'liviu@ignat.email',
       password: 'test123'
+    };
+    var loginResponse = {
+      access_token: 'access_token',
+      refresh_token: 'refresh_token'
     };
 
     describe('When login is successful with status code 200', function () {
       var loginServiceResponse;
       beforeEach(function () {
-        $http.expectPOST(url).respond(200);
+        spyOn($cookies, 'put');
+        spyOn(service, 'setAuthToken');
+
+        $http.expectPOST(url).respond(200, loginResponse);
 
         service.login(loginData).then(function (result) {
           loginServiceResponse = result;
@@ -87,9 +95,41 @@ describe('AuthService', function (){
         expect(loginServiceResponse).toBeDefined();
         expect(loginServiceResponse.success).toBe(true);
       });
+
+      it('Should set cookie with the refresh_token', function () {
+        expect($cookies.put).toHaveBeenCalled();
+      });
+
+      it('Should set access_token', function () {
+        expect(service.setAuthToken).toHaveBeenCalledWith(loginResponse.access_token);
+      });
+
+      it('To be logged in the system', function () {
+        expect($rootScope.isLoggedIn).toBe(true);
+      });
+
+      describe('When refreshing token', function () {
+        var refreshTokenResponse = {
+          access_token: 'new_access_token',
+          refresh_token: 'refresh_token'
+        };
+        var refreshTokenResult;
+
+        beforeEach(function () {
+          $http.expectPOST(url).respond(200, refreshTokenResponse);
+          service.login(loginData).then(function (result) {
+            refreshTokenResult = result;
+          });
+          $http.flush();
+        });
+
+        it('Should set the new access_token', function () {
+          expect(service.setAuthToken).toHaveBeenCalledWith(refreshTokenResponse.access_token);
+        });
+      });
     });
 
-    describe('When login is successful with status code 401', function () {
+    describe('When login is NOT successful with status code 401', function () {
       var loginServiceResponse;
       beforeEach(function () {
         $http.expectPOST(url).respond(401);

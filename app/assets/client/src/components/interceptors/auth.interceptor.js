@@ -30,7 +30,11 @@
     }
 
     requestError(rejection) {
-      return self.onRequestError(rejection);
+      return rejection;
+    }
+
+    responseError(rejection) {
+      return self.onResponseError(rejection);
     }
 
     init() {
@@ -41,7 +45,14 @@
     }
 
     tryRefreshToken() {
-      return this.authService.refreshAuthTokenIfNotExpired();
+      return this.authService.refreshAuthTokenIfNotExpired().then(() => {
+        return this.authService.getAuthToken();
+      }).then((authToken) => {
+        if(authToken) {
+          return authToken;
+        }
+        return this.$q.when();
+      });
     }
 
     onLoggedOut() {
@@ -57,18 +68,18 @@
           var isLoggedIn = this.authService.isLoggedIn();
 
           if(isLoggedIn) {
-            return this.tryRefreshToken().then(() => {
-              return this.authService.getAuthToken();
+            return this.tryRefreshToken().then((accessToken) => {
+              config.headers.Authorization = 'Bearer ' + accessToken;
+              deferred.resolve(config);
             });
           } else {
-            return this.onLoggedOut();
+            return this.onLoggedOut().then(() => {
+              deferred.resolve(config);
+            });
           }
+        } else {
+          deferred.resolve(config);
         }
-      }).then((autToken) => {
-        if(autToken && autToken.token) {
-          config.headers.Authorization = 'Bearer ' + autToken.token;
-        }
-        deferred.resolve(config);
       }).catch(() => {
         return this.onLoggedOut().then(() => {
           deferred.resolve(config);
@@ -78,7 +89,10 @@
       return deferred.promise;
     }
 
-    onRequestError(rejection) {
+    onResponseError(rejection) {
+      if(rejection.status === 401) {
+        this.onLoggedOut();
+      }
       return this.$q.reject(rejection);
     }
   }

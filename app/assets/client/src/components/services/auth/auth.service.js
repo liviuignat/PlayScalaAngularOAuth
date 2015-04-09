@@ -11,6 +11,9 @@
 
   const REFRESH_TOKEN_COOKIE_KEY = 'session_id';
   const AUTH_TOKEN_CACHE_KEY = 'session_auth_token';
+  const CLIENT_ID = 'DefaultClient';
+  const CLIENT_SECRET = 'DefatultClientSecret';
+  const TOKEN_LIFETIME = 50 * 60 * 1000;
 
   class AuthService {
     constructor($rootScope, $http, $q, $window, $cookies, md5) {
@@ -27,13 +30,6 @@
       return (refreshToken || '').length > 0;
     }
 
-    getServerToken() {
-      return this.$q.when({
-        token: 'harcoded_token',
-        autoRereshToken: 'auto_refresh'
-      });
-    }
-
     getAuthToken() {
       var value = this.$window.sessionStorage.getItem(AUTH_TOKEN_CACHE_KEY);
 
@@ -44,13 +40,13 @@
       var json = JSON.parse(value);
       var isExpired = json.expires < Date.now();
 
-      return this.$q.when(isExpired ? null : json.token);
+      return this.$q.when(isExpired ? null : json.accessToken);
     }
 
     setAuthToken(token) {
       var json = {
-        token: token,
-        expires: Date.now() + (3600 * 1000)
+        accessToken: token,
+        expires: Date.now() + TOKEN_LIFETIME
       };
       this.$window.sessionStorage.setItem(AUTH_TOKEN_CACHE_KEY, JSON.stringify(json));
       this.$q.when();
@@ -60,55 +56,82 @@
       if(!this.isLoggedIn()) {
         this.$q.reject(new Error('Not logged in'));
       }
-      var newToken = 'refreshed_auth_token';
-      this.setAuthToken(newToken);
-    }
 
-    refreshAuthTokenIfNotExpired() {
       var deferred = this.$q.defer();
+      var failResponse = new AuthResponse(false, 'Cannot refresh token');
+      var refreshToken = this.$cookies.get(REFRESH_TOKEN_COOKIE_KEY);
+      var payload = angular.copy({
+        grant_type: 'refresh_token',
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+        refresh_token: refreshToken
+      });
 
-      this.getAuthToken().then((authToken) => {
-        if(!authToken) {
-          return this.refreshAuthToken();
+      this.$http({
+        method: 'POST',
+        url: '/api/auth/access_token',
+        data: payload
+      }).success((tokenData, status) => {
+        if (status === 200) {
+          this.setAuthToken(tokenData.access_token);
+          return deferred.resolve(new AuthResponse(true));
         }
-        deferred.resolve();
+
+        return deferred.resolve(failResponse);
+      }).error(() => {
+        return deferred.resolve(failResponse);
+      }).catch(() => {
+        return deferred.resolve(failResponse);
       });
 
       return deferred.promise;
     }
 
+    refreshAuthTokenIfNotExpired() {
+      return this.getAuthToken().then((authToken) => {
+        if(!authToken) {
+          return this.refreshAuthToken();
+        }
+        return this.$q.when();
+      });
+    }
+
     login(model) {
       var deferred = this.$q.defer();
       var failResponse = new AuthResponse(false, 'User or password does not exist');
-      var payload = angular.copy(model);
+      var payload = angular.copy({
+        grant_type: 'password',
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+        scope: 'offline_access',
+        username: model.email,
+        password: model.password
+      });
 
       payload.password = this.md5.createHash(model.password || '');
 
       this.$http({
         method: 'POST',
-        url: '/api/auth/login',
+        url: '/api/auth/access_token',
         data: payload
-      }).success((data, status) => {
+      }).success((tokenData, status) => {
         if (status === 200) {
-          this.getServerToken().then((tokenData) => {
-            this.$cookies.put(REFRESH_TOKEN_COOKIE_KEY, tokenData.autoRereshToken, {
-              path: '/',
-              secure: false,
-              expires: Date.now() + (30 * 24 * 3600 * 1000)
-            });
-            this.setAuthToken(tokenData.token);
-          }).then(() => {
-            this.$rootScope.isLoggedIn = true;
-            this.$rootScope.$broadcast('auth:login');
-            deferred.resolve(new AuthResponse(true));
-          }).catch(function () {
-            deferred.resolve(failResponse);
+          this.$cookies.put(REFRESH_TOKEN_COOKIE_KEY, tokenData.refresh_token, {
+            path: '/',
+            secure: false,
+            expires: Date.now() + (30 * 24 * 3600 * 1000)
           });
+          this.setAuthToken(tokenData.access_token);
+          this.$rootScope.isLoggedIn = true;
+          this.$rootScope.$broadcast('auth:login');
+          return deferred.resolve(new AuthResponse(true));
         }
+
+        return deferred.resolve(failResponse);
       }).error(() => {
-        deferred.resolve(failResponse);
+        return deferred.resolve(failResponse);
       }).catch(() => {
-        deferred.resolve(failResponse);
+        return deferred.resolve(failResponse);
       });
 
       return deferred.promise;
