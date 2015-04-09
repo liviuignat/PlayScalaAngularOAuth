@@ -2,7 +2,7 @@ package controllers.requests
 
 import business.models.User
 import controllers.requests.auth.CreateUserRequest
-import controllers.requests.user.{GetUserResponse, UpdateUserRequest}
+import controllers.requests.user.{GetUserResponse, UpdateMyAccountRequest}
 import reactivemongo.bson.BSONObjectID
 
 /**
@@ -10,18 +10,16 @@ import reactivemongo.bson.BSONObjectID
  */
 object Mappings {
   implicit def createUserRequestToUser(req: CreateUserRequest) =
-    User(BSONObjectID.generate.stringify, req.email, req.password, req.firstName, req.lastName)
-
-  implicit def updateUserRequestToUser(req: UpdateUserRequest) =
-    User(_id = req.id.get,
-      email = null,
-      password = null,
+    User(_id = BSONObjectID.generate.stringify,
+      email = req.email,
+      password = req.password,
       firstName = req.firstName,
       lastName = req.lastName)
 
+
   implicit def userToGetUserResponse(u: User) =
     GetUserResponse(id = u._id,
-      firstName = u.firstName.getOrElse(""),
-      lastName = u.lastName.getOrElse(""),
+      firstName = u.firstName,
+      lastName = u.lastName,
       isActive = u.isActive)
 }

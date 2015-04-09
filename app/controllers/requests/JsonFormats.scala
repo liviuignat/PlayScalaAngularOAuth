@@ -1,7 +1,7 @@
 package controllers.requests
 
 import controllers.requests.auth.{LoginRequest, ResetPasswordRequest, CreateUserRequest}
-import controllers.requests.user.{GetUserResponse, UpdateUserRequest}
+import controllers.requests.user.{GetUserResponse, UpdateMyAccountRequest}
 import play.api.libs.json.Json
 
 /**
@@ -13,5 +13,4 @@ object JsonFormats {
   implicit val LoginFormat = Json.format[LoginRequest]
 
   implicit val ResetPasswordRequestFormat = Json.format[ResetPasswordRequest]
-  implicit val UpdateUserRequestFormat = Json.format[UpdateUserRequest]
 }

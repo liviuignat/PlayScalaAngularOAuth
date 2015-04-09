@@ -2,7 +2,10 @@ package dao
 
 import javax.inject.Inject
 
-import business.models.User
+import business.models.Gender.Gender
+import business.models.PhoneType
+import business.models.PhoneType._
+import business.models._
 import business.repositories._
 import common._
 import play.api.libs.json._
@@ -11,18 +14,45 @@ import play.modules.reactivemongo.json.collection.JSONCollection
 import play.api.libs.concurrent.Execution.Implicits._
 import reactivemongo.api.Cursor
 import reactivemongo.bson.BSONRegex
+import play.modules.reactivemongo.json.BSONFormats._
 
 import scala.concurrent.Future
 import play.api.Play.current
 
-import business.models.JsonFormats._
-
 import scala.util.matching.Regex
 
-/**
- * Created by liviuignat on 22/03/15.
- */
+object EnumJson {
+
+  def enumReads[E <: Enumeration](enum: E): Reads[E#Value] = new Reads[E#Value] {
+    def reads(json: JsValue): JsResult[E#Value] = json match {
+      case JsString(s) => {
+        try {
+          JsSuccess(enum.withName(s))
+        } catch {
+          case _: NoSuchElementException =>
+            JsError(s"Enumeration expected of type: '${enum.getClass}', but it does not contain '$s'")
+        }
+      }
+      case _ => JsError("String value expected")
+    }
+  }
+
+  implicit def enumWrites[E <: Enumeration]: Writes[E#Value] = new Writes[E#Value] {
+    def writes(v: E#Value): JsValue = JsString(v.toString)
+  }
+
+  implicit def enumFormat[E <: Enumeration](enum: E): Format[E#Value] = {
+    Format(enumReads(enum), enumWrites)
+  }
+}
+
 class UserRepository @Inject() () extends IUserRepository {
+
+  implicit val PhoneTypeFormat = EnumJson.enumFormat(PhoneType)
+  implicit val GenderFormat = EnumJson.enumFormat(Gender)
+  implicit val PhoneFormat = Json.format[Phone]
+  implicit val PersonFormat = Json.format[Person]
+  implicit val UserFormat = Json.format[User]
 
   private def collection = ReactiveMongoPlugin.db
     .collection[JSONCollection]("app_users")
