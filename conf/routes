@@ -23,5 +23,5 @@ DELETE  /api/user/:id               @controllers.UsersController.deleteUserById(
 
 # Auth endpoints
 POST    /api/auth/create            @controllers.AuthController.createUser
-POST    /api/auth/login             @controllers.AuthController.login
+POST    /api/auth/access_token      @controllers.AuthController.accessToken
 POST    /api/auth/resetpassword     @controllers.AuthController.resetPassword

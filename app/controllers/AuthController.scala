@@ -18,6 +18,7 @@ import controllers.requests.auth._
 import controllers.requests.JsonFormats._
 import controllers.requests.Mappings._
 
+import scalaoauth2.provider.OAuth2Provider
 
 
 /**
@@ -27,7 +28,8 @@ import controllers.requests.Mappings._
 class AuthController @Inject() (encriptionService: IStringEncriptionService,
                                 randomStringGenerator: IRandomStringService,
                                 emailService: IEmailService,
-                                userRepository: IUserRepository)  extends Controller with MongoController {
+                                userRepository: IUserRepository,
+                                authDataHandlerFactory: IOAuthDataHandlerFactory) extends Controller with MongoController with MyOAuth2Provider {
 
   def createUser = Action.async(parse.json) { req =>
     req.body.validate[CreateUserRequest].map {
@@ -52,21 +54,6 @@ class AuthController @Inject() (encriptionService: IStringEncriptionService,
     }.getOrElse(Future.successful(BadRequest(Json.obj("message" -> "Invalid json"))))
   }
 
-  def login() = Action.async(parse.json) { req =>
-    req.body.validate[LoginRequest].map {
-      getUserRequest => {
-        userRepository.getByEmailAndPassword(getUserRequest.email, getUserRequest.password).map({
-          case Some(user) => {
-            val response: GetUserResponse = user
-            val responseJson = Json.toJson(response)
-            Ok(responseJson)
-          }
-          case None => BadRequest(Json.obj("message" -> "No such item"))
-        })
-      }
-    }.getOrElse(Future.successful(BadRequest(Json.obj("message" -> "Invalid json"))))
-  }
-
   def resetPassword() = Action.async(parse.json) { req =>
     req.body.validate[ResetPasswordRequest].map {
       resetPasswordRequest => {
@@ -83,5 +70,9 @@ class AuthController @Inject() (encriptionService: IStringEncriptionService,
         }
       }
     }.getOrElse(Future.successful(BadRequest(Json.obj("message" -> "Invalid json"))))
+  }
+
+  def accessToken = Action.async { implicit request =>
+    issueAccessToken(authDataHandlerFactory.getInstance())
   }
 }
