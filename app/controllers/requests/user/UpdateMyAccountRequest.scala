@@ -11,4 +11,4 @@ case class UpdateMyAccountRequest(
   var description: Option[String],
   var birthDate: Option[Date],
   var gender: Option[Int],
-  var phone: Option[Int])
+  var phone: Option[PhoneResponse])

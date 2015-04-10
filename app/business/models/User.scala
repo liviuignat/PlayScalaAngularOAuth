@@ -21,7 +21,7 @@ import business.models.Gender._
 import business.models.PhoneType._
 
 case class Phone(
-  var phone: String,
+  var phoneNumber: String,
   var phoneType: PhoneType = PhoneType(0)
 )
 

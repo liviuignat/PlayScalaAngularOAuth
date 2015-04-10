@@ -31,7 +31,7 @@ class MyAccountControllerSpec extends JasmineSpec with BeforeAndAfter with Befor
 
   describe("UsersControllerSpec") {
     beforeEach {
-      ProjectTestUtils.dropDb()
+      //ProjectTestUtils.dropDb()
     }
 
     describe("When wanting to insert a first user") {
@@ -47,7 +47,7 @@ class MyAccountControllerSpec extends JasmineSpec with BeforeAndAfter with Befor
         response = route(request)
 
         result = Await.result(response.get, timeout)
-        firstUserId = result.header.headers.get("Location").get
+        firstUserId = result.header.headers.get("Location").getOrElse("")
       }
 
       describe("When wanting to insert a second user") {
@@ -95,7 +95,16 @@ class MyAccountControllerSpec extends JasmineSpec with BeforeAndAfter with Befor
                 .withHeaders("Authorization" -> s"Bearer $accessToken")
                 .withJsonBody(Json.obj(
                 "firstName" -> "Liviu Updated",
-                "lastName" -> "Ignat Updated"))
+                "lastName" -> "Ignat Updated",
+                "zipCode" -> "80636",
+                "profilePhoto" -> "http://mycdn.com/liviu_ignat.jpg",
+                "description" -> "Software freak, learning scala now",
+                "gender" -> 1,
+                "phone" -> Json.obj(
+                  "phoneNumber" -> "0890898989",
+                  "phoneType" -> 2
+                )
+              ))
               response = route(request)
               result = Await.result(response.get, timeout)
             }
@@ -118,14 +127,35 @@ class MyAccountControllerSpec extends JasmineSpec with BeforeAndAfter with Befor
 
               it("Should have the updated first name") {
                 val json: JsValue = contentAsJson(response.get)
-                val firstName: String = json.\("firstName").as[String]
-                firstName should equal("Liviu Updated")
+                json.\("firstName").as[String] should equal("Liviu Updated")
               }
-
               it("Should have the updated last name") {
                 val json: JsValue = contentAsJson(response.get)
-                val firstName: String = json.\("lastName").as[String]
-                firstName should equal("Ignat Updated")
+                json.\("lastName").as[String] should equal("Ignat Updated")
+              }
+              it("Should have the updated zip code") {
+                val json: JsValue = contentAsJson(response.get)
+                json.\("zipCode").as[String] should equal("80636")
+              }
+              it("Should have the updated profile photo") {
+                val json: JsValue = contentAsJson(response.get)
+                json.\("profilePhoto").as[String] should equal("http://mycdn.com/liviu_ignat.jpg")
+              }
+              it("Should have the description") {
+                val json: JsValue = contentAsJson(response.get)
+                json.\("description").as[String] should equal("Software freak, learning scala now")
+              }
+              it("Should have the updated gender") {
+                val json: JsValue = contentAsJson(response.get)
+                json.\("gender").as[Int] should equal(1)
+              }
+              it("Should have the updated phone number") {
+                val json: JsValue = contentAsJson(response.get)
+                json.\("phone").\("phoneNumber").as[String] should equal("0890898989")
+              }
+              it("Should have the updated phone type") {
+                val json: JsValue = contentAsJson(response.get)
+                json.\("phone").\("phoneType").as[Int] should equal(2)
               }
             }
           }

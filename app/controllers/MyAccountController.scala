@@ -2,10 +2,10 @@ package controllers
 
 import javax.inject.Inject
 
-import business.models.{Gender, User}
+import business.models.{PhoneType, Phone, Gender, User}
 import business.repositories.IUserRepository
 import business.services.IStringEncriptionService
-import controllers.requests.user.{GetMyAccountResponse, GetUserResponse, UpdateMyAccountRequest}
+import controllers.requests.user.{GetMyAccountResponse, UpdateMyAccountRequest}
 import org.slf4j.{LoggerFactory, Logger}
 import play.api.libs.json.Json
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -21,6 +21,8 @@ class MyAccountController @Inject() (
 
   private final val logger: Logger = LoggerFactory.getLogger(classOf[UsersController])
 
+  import controllers.requests.Mappings._
+  import controllers.requests.JsonFormats._
   implicit val UpdateMyAccountRequestFormat = Json.format[UpdateMyAccountRequest]
   implicit val GetMyAccountResponseFormat = Json.format[GetMyAccountResponse]
   implicit def userToMyAccountResponse(user: User) = GetMyAccountResponse(
@@ -33,12 +35,13 @@ class MyAccountController @Inject() (
     description = user.description,
     gender = user.gender.id,
     birthDate = user.birthDate,
-    createdDate = user.createdDate
+    createdDate = user.createdDate,
+    phone = user.phone
   )
 
   def getMyAccount() = Action.async { implicit req =>
     authorize(authDataHandlerFactory.getInstance()) { authInfo =>
-      userRepository.getById(authInfo.user.id).map {
+      userRepository.getById(authInfo.user._id).map {
         case Some(user) => {
           val response: GetMyAccountResponse = user
           val responseJson = Json.toJson(response)
@@ -62,7 +65,7 @@ class MyAccountController @Inject() (
           user.description = updateUserRequest.description
           user.gender = Gender(updateUserRequest.gender.getOrElse(0))
           user.birthDate = updateUserRequest.birthDate
-          user.phone = None
+          user.phone = updateUserRequest.phone
 
           userRepository.update(user).map({
             case lastError if lastError.ok() => Ok("")

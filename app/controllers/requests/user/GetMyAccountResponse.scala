@@ -13,5 +13,6 @@ case class GetMyAccountResponse(
   description: Option[String],
   birthDate: Option[Date],
   gender: Int,
+  phone: Option[PhoneResponse],
   createdDate: Date
 )

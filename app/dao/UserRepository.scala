@@ -25,9 +25,16 @@ object EnumJson {
 
   def enumReads[E <: Enumeration](enum: E): Reads[E#Value] = new Reads[E#Value] {
     def reads(json: JsValue): JsResult[E#Value] = json match {
-      case JsString(s) => {
+      case JsNumber(s) => {
         try {
-          JsSuccess(enum.withName(s))
+          enum.values.find(v => v.id == s) match {
+            case Some(value) => JsSuccess(value)
+            case _ => enum.values.find(v => v == 0) match {
+              case Some(value) => JsSuccess(value)
+              case _ => JsError(s"Enumeration: '${enum.getClass}', has no default value")
+            }
+          }
+
         } catch {
           case _: NoSuchElementException =>
             JsError(s"Enumeration expected of type: '${enum.getClass}', but it does not contain '$s'")
@@ -38,7 +45,7 @@ object EnumJson {
   }
 
   implicit def enumWrites[E <: Enumeration]: Writes[E#Value] = new Writes[E#Value] {
-    def writes(v: E#Value): JsValue = JsString(v.toString)
+    def writes(v: E#Value): JsValue = JsNumber(v.id)
   }
 
   implicit def enumFormat[E <: Enumeration](enum: E): Format[E#Value] = {
@@ -107,18 +114,22 @@ class UserRepository @Inject() () extends IUserRepository {
 
   override def insert(user: User): Future[LastError] = {
     collection.insert(user).map {
-      case ok if ok.ok =>
-        NoError()
+      case ok if ok.ok => NoError()
       case error => Error(Some(new RuntimeException(error.message)))
     }
   }
 
   override def update(user: User): Future[LastError] = {
     val selector = Json.obj("_id" -> user._id)
+
+    /*
+    Still deciding if to send Json or the full object. Should the full object be replaced ... maybe yes
     val jsonToUpdate = Json.obj(
       "firstName" -> user.firstName,
       "lastName" -> user.lastName)
-    val modifier = Json.obj("$set" -> jsonToUpdate)
+    */
+
+    val modifier = Json.obj("$set" -> user)
 
     collection.update(selector, modifier, multi = true).map {
       case ok if ok.ok =>
