@@ -31,7 +31,7 @@ class MyAccountControllerSpec extends JasmineSpec with BeforeAndAfter with Befor
 
   describe("UsersControllerSpec") {
     beforeEach {
-      //ProjectTestUtils.dropDb()
+      ProjectTestUtils.dropDb()
     }
 
     describe("When wanting to insert a first user") {
