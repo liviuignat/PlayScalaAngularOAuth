@@ -129,6 +129,8 @@ class UserRepository @Inject() () extends IUserRepository {
       "lastName" -> user.lastName)
     */
 
+    val json = Json.toJson(user).as[JsObject] - "_id";
+    
     val modifier = Json.obj("$set" -> user)
 
     collection.update(selector, modifier, multi = true).map {
