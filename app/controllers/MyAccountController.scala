@@ -33,6 +33,7 @@ class MyAccountController @Inject() (
     zipCode = user.zipCode,
     profilePhoto = user.profilePhoto,
     description = user.description,
+    headline = user.headline,
     gender = user.gender.getOrElse(Gender(0)).id,
     birthDate = user.birthDate,
     createdDate = user.createdDate,
@@ -65,6 +66,7 @@ class MyAccountController @Inject() (
           user.description = updateUserRequest.description
           user.gender = Some(Gender(updateUserRequest.gender.getOrElse(0)))
           user.birthDate = updateUserRequest.birthDate
+          user.headline = updateUserRequest.headline
           user.phone = updateUserRequest.phone
 
           userRepository.update(user).map({

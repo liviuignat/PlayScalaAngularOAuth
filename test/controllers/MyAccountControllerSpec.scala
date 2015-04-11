@@ -98,6 +98,7 @@ class MyAccountControllerSpec extends JasmineSpec with BeforeAndAfter with Befor
                 "lastName" -> "Ignat Updated",
                 "zipCode" -> "80636",
                 "profilePhoto" -> "http://mycdn.com/liviu_ignat.jpg",
+                "headline" -> "Software freak",
                 "description" -> "Software freak, learning scala now",
                 "gender" -> 1,
                 "phone" -> Json.obj(
@@ -144,6 +145,10 @@ class MyAccountControllerSpec extends JasmineSpec with BeforeAndAfter with Befor
               it("Should have the description") {
                 val json: JsValue = contentAsJson(response.get)
                 json.\("description").as[String] should equal("Software freak, learning scala now")
+              }
+              it("Should have the headline") {
+                val json: JsValue = contentAsJson(response.get)
+                json.\("headline").as[String] should equal("Software freak")
               }
               it("Should have the updated gender") {
                 val json: JsValue = contentAsJson(response.get)

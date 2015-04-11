@@ -10,6 +10,7 @@ case class GetMyAccountResponse(
 
   zipCode: Option[String],
   profilePhoto: Option[String],
+  headline: Option[String],
   description: Option[String],
   birthDate: Option[Date],
   gender: Int,

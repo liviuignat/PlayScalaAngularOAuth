@@ -41,6 +41,7 @@ case class User(
   var zipCode: Option[String] = None,
   var profilePhoto: Option[String] = None,
 
+  var headline: Option[String] = None,
   var description: Option[String] = None,
   var birthDate: Option[Date] = None,
   var gender: Option[Gender] = None,

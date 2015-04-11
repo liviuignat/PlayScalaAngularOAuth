@@ -8,6 +8,7 @@ case class UpdateMyAccountRequest(
   var lastName: Option[String],
   var zipCode: Option[String],
   var profilePhoto: Option[String],
+  var headline: Option[String],
   var description: Option[String],
   var birthDate: Option[Date],
   var gender: Option[Int],
