@@ -43,7 +43,7 @@ case class User(
 
   var description: Option[String] = None,
   var birthDate: Option[Date] = None,
-  var gender: Gender = Gender(0),
+  var gender: Option[Gender] = None,
   var phone: Option[Phone] = None,
 
   var createdDate: Date = new Date(),

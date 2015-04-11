@@ -45,6 +45,18 @@ angular.module('app', [
         controller: 'UserDetailController',
         controllerAs:'model'
       })
+
+      .when('/myaccount/profile', {
+        templateUrl: 'app/myaccount/basicprofile/basicprofile.tpl.html',
+        controller: 'BasicProfileController',
+        controllerAs:'model'
+      })
+
+      .when('/user/:id', {
+        templateUrl: 'app/user/detail/userdetail.tpl.html',
+        controller: 'UserDetailController',
+        controllerAs:'model'
+      })
       .otherwise({
         redirectTo: '/login'
       });

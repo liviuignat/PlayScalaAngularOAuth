@@ -33,7 +33,7 @@ class MyAccountController @Inject() (
     zipCode = user.zipCode,
     profilePhoto = user.profilePhoto,
     description = user.description,
-    gender = user.gender.id,
+    gender = user.gender.getOrElse(Gender(0)).id,
     birthDate = user.birthDate,
     createdDate = user.createdDate,
     phone = user.phone
@@ -63,7 +63,7 @@ class MyAccountController @Inject() (
           user.zipCode = updateUserRequest.zipCode
           user.profilePhoto = updateUserRequest.profilePhoto
           user.description = updateUserRequest.description
-          user.gender = Gender(updateUserRequest.gender.getOrElse(0))
+          user.gender = Some(Gender(updateUserRequest.gender.getOrElse(0)))
           user.birthDate = updateUserRequest.birthDate
           user.phone = updateUserRequest.phone
 
