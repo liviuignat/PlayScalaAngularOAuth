@@ -32,13 +32,14 @@
       return deferred.promise;
     }
 
-    updateBasicProfile() {
+    updateBasicProfile(profileData) {
       var deferred = this.$q.defer();
       var url = '/api/user/me';
 
       this.$http({
         method: 'PUT',
         url: url,
+        data: profileData,
         isSecure: true
       }).success((data, status) => {
         if (status === 200) {
