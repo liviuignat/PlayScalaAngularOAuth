@@ -3,7 +3,6 @@ package test.controllers
 import java.util.concurrent.TimeUnit
 
 import business.models._
-import business.models.JsonFormats._
 import org.scalatest._
 import play.api.Play
 import play.api.mvc._

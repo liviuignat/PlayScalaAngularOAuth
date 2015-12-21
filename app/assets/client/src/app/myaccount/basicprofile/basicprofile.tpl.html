@@ -1,0 +1,25 @@
+<div class="container">
+  <div class="row">
+    <h3>{{model.me.firstName}} {{model.me.lastName}}</h3>
+    <p>Member since: {{model.me.createdDate | date }}</p>
+  </div>
+
+  <div class="row">
+    <form class="" ng-submit="model.updateBasicProfile()">
+      <input ng-model="model.me.email" type="email" class="form-control" placeholder="Email" required  />
+      <input ng-model="model.me.headline" type="text" class="form-control" placeholder="Headline" />
+      <textarea ng-model="model.me.description" type="text" class="form-control" placeholder="Description" />
+      <input ng-model="model.me.zipCode" type="text" class="form-control" placeholder="Zip code">
+      <select ng-model="model.me.gender"
+              class="form-control"
+              ng-options="option.value as option.text for option in model.options.genders">
+      </select>
+      <input ng-model="model.me.phone.phoneNumber" type="text" class="form-control" placeholder="Phone number">
+      <select ng-model="model.me.phone.phoneType"
+              class="form-control"
+              ng-options="option.value as option.text for option in model.options.phoneTypes">
+      </select>
+      <input type="submit" class="btn btn-lg btn-default btn-block" value="Update user profile" />
+    </form>
+  </div>
+</div>

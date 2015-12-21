@@ -1,7 +1,7 @@
 package controllers
 
 import javax.inject._
-import controllers.requests.user.{GetUserResponse, UpdateUserRequest}
+import controllers.requests.user.{GetUserResponse, UpdateMyAccountRequest}
 import org.slf4j._
 import play.api.libs.json.Json
 import play.api.mvc._
@@ -17,11 +17,6 @@ import business.models._
 import requests._
 import requests.JsonFormats._
 import requests.Mappings._
-
-
-/**
- * Created by liviuignat on 21/03/15.
- */
 
 @Singleton
 class UsersController @Inject() (
@@ -56,31 +51,6 @@ class UsersController @Inject() (
           })
           Ok(Json.toJson(response))
         }
-      })
-    }
-  }
-
-  def updateUserById(id: String) = Action.async(parse.json) { implicit req =>
-    authorize(authDataHandlerFactory.getInstance()) { authInfo =>
-      req.body.validate[UpdateUserRequest].map {
-        updateUserRequest => {
-          updateUserRequest.id = Some(id)
-          val user: User = updateUserRequest
-
-          userRepository.update(user).map({
-            case lastError if lastError.ok() => Ok("")
-            case lastError if !lastError.ok() => InternalServerError(Json.obj("message" -> "Internal server error"))
-          })
-        }
-      }.getOrElse(Future.successful(BadRequest(Json.obj("message" -> "Invalid json"))))
-    }
-  }
-
-  def deleteUserById(id: String) = Action.async { implicit req =>
-    authorize(authDataHandlerFactory.getInstance()) { authInfo =>
-      userRepository.delete(id).map({
-        case lastError if lastError.ok() => Ok("")
-        case lastError if !lastError.ok() => InternalServerError(Json.obj("message" -> "Internal server error"))
       })
     }
   }

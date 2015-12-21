@@ -2,7 +2,10 @@ package dao
 
 import javax.inject.Inject
 
-import business.models.User
+import business.models.Gender.Gender
+import business.models.PhoneType
+import business.models.PhoneType._
+import business.models._
 import business.repositories._
 import common._
 import play.api.libs.json._
@@ -11,18 +14,52 @@ import play.modules.reactivemongo.json.collection.JSONCollection
 import play.api.libs.concurrent.Execution.Implicits._
 import reactivemongo.api.Cursor
 import reactivemongo.bson.BSONRegex
+import play.modules.reactivemongo.json.BSONFormats._
 
 import scala.concurrent.Future
 import play.api.Play.current
 
-import business.models.JsonFormats._
-
 import scala.util.matching.Regex
 
-/**
- * Created by liviuignat on 22/03/15.
- */
+object EnumJson {
+
+  def enumReads[E <: Enumeration](enum: E): Reads[E#Value] = new Reads[E#Value] {
+    def reads(json: JsValue): JsResult[E#Value] = json match {
+      case JsNumber(s) => {
+        try {
+          enum.values.find(v => v.id == s) match {
+            case Some(value) => JsSuccess(value)
+            case _ => enum.values.find(v => v == 0) match {
+              case Some(value) => JsSuccess(value)
+              case _ => JsError(s"Enumeration: '${enum.getClass}', has no default value")
+            }
+          }
+
+        } catch {
+          case _: NoSuchElementException =>
+            JsError(s"Enumeration expected of type: '${enum.getClass}', but it does not contain '$s'")
+        }
+      }
+      case _ => JsError("String value expected")
+    }
+  }
+
+  implicit def enumWrites[E <: Enumeration]: Writes[E#Value] = new Writes[E#Value] {
+    def writes(v: E#Value): JsValue = JsNumber(v.id)
+  }
+
+  implicit def enumFormat[E <: Enumeration](enum: E): Format[E#Value] = {
+    Format(enumReads(enum), enumWrites)
+  }
+}
+
 class UserRepository @Inject() () extends IUserRepository {
+
+  implicit val PhoneTypeFormat = EnumJson.enumFormat(PhoneType)
+  implicit val GenderFormat = EnumJson.enumFormat(Gender)
+  implicit val PhoneFormat = Json.format[Phone]
+  implicit val PersonFormat = Json.format[Person]
+  implicit val UserFormat = Json.format[User]
 
   private def collection = ReactiveMongoPlugin.db
     .collection[JSONCollection]("app_users")
@@ -77,18 +114,24 @@ class UserRepository @Inject() () extends IUserRepository {
 
   override def insert(user: User): Future[LastError] = {
     collection.insert(user).map {
-      case ok if ok.ok =>
-        NoError()
+      case ok if ok.ok => NoError()
       case error => Error(Some(new RuntimeException(error.message)))
     }
   }
 
   override def update(user: User): Future[LastError] = {
     val selector = Json.obj("_id" -> user._id)
+
+    /*
+    Still deciding if to send Json or the full object. Should the full object be replaced ... maybe yes
     val jsonToUpdate = Json.obj(
       "firstName" -> user.firstName,
       "lastName" -> user.lastName)
-    val modifier = Json.obj("$set" -> jsonToUpdate)
+    */
+
+    val json = Json.toJson(user).as[JsObject] - "_id"
+
+    val modifier = Json.obj("$set" -> json)
 
     collection.update(selector, modifier, multi = true).map {
       case ok if ok.ok =>
